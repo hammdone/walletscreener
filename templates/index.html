@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wallet Risk Chatbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sage: #9CAF88;
+      --sage-dark: #7C9572;
+      --beige: #F9F6F1;
+      --white: #ffffff;
+      --gray: #e2e2e2;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --success: #27ae60;
+      --progress-bg: #ddd;
+      --progress-low: #27ae60;     /* green */
+      --progress-medium: #f39c12;  /* orange */
+      --progress-high: #e74c3c;    /* red */
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--beige);
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .chat-container {
+      background: var(--white);
+      max-width: 640px;
+      width: 100%;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      height: 85vh;
+      overflow: hidden;
+    }
+
+    header {
+      background: var(--sage);
+      padding: 20px;
+      color: white;
+      font-size: 1.8rem;
+      font-weight: 700;
+      text-align: center;
+      border-radius: 18px 18px 0 0;
+      user-select: none;
+    }
+
+    #selector {
+      padding: 12px 20px;
+      background: #f2f0eb;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      border-bottom: 1px solid var(--gray);
+    }
+
+    #chat-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #fffefc;
+      font-size: 1rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 14px 20px;
+      border-radius: 24px;
+      line-height: 1.4;
+      font-size: 1rem;
+      font-weight: 400;
+      word-wrap: break-word;
+      box-sizing: border-box;
+    }
+
+    .user {
+      background: var(--sage-dark);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bot {
+      background: var(--beige);
+      color: #222;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      position: relative;
+      white-space: normal;
+    }
+
+    /* Risk score container */
+    .risk-score-container {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #f9f9f9;
+      border: 1.5px solid var(--sage);
+      border-radius: 16px;
+      font-size: 0.9rem;
+      color: #333;
+      user-select: text;
+    }
+
+    .progress-bar-wrapper {
+      background: var(--progress-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      height: 18px;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar {
+      height: 18px;
+      width: 0%;
+      background-color: var(--progress-low);
+      border-radius: 12px 0 0 12px;
+      transition: width 0.6s ease;
+    }
+
+    .risk-category-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .risk-category-list li {
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .risk-label {
+      font-weight: 600;
+      margin-right: 10px;
+    }
+
+    /* Color coding for risk levels */
+    .low-risk {
+      color: var(--success);
+    }
+    .medium-risk {
+      color: var(--warning);
+    }
+    .high-risk {
+      color: var(--danger);
+    }
+
+    /* Chart container inside bot message */
+    .feature-chart-small {
+      margin-top: 12px;
+      width: 160px;
+      height: 160px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgb(156 175 136 / 0.35);
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      object-fit: contain;
+      background: white;
+      border: 1.5px solid var(--sage);
+    }
+    .feature-chart-small:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 32px rgb(156 175 136 / 0.7);
+    }
+
+    /* Popup overlay for enlarged chart */
+    #chart-popup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(255, 255, 255, 0.95);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #chart-popup img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 24px;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+      object-fit: contain;
+    }
+
+    #chart-popup .close-btn {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      background: var(--sage);
+      color: white;
+      font-size: 2rem;
+      font-weight: 700;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      line-height: 38px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: background-color 0.3s ease;
+    }
+    #chart-popup .close-btn:hover {
+      background: var(--sage-dark);
+    }
+
+    #chat-form {
+      display: flex;
+      padding: 16px 20px;
+      border-top: 1px solid var(--gray);
+      background: var(--white);
+      border-radius: 0 0 18px 18px;
+    }
+
+    #chat-input {
+      flex-grow: 1;
+      border: 1.5px solid var(--sage);
+      border-radius: 9999px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-family: 'DM Sans', sans-serif;
+      outline-offset: 2px;
+      outline-color: var(--sage-dark);
+      transition: outline-color 0.3s ease;
+    }
+    #chat-input:focus {
+      outline-color: var(--sage);
+    }
+
+    #send-btn {
+      background: var(--sage);
+      color: white;
+      border: none;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 0 20px;
+      margin-left: 14px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #send-btn:hover {
+      background: var(--sage-dark);
+    }
+
+    /* Scrollbar styling for chat log */
+    #chat-log::-webkit-scrollbar {
+      width: 8px;
+    }
+    #chat-log::-webkit-scrollbar-track {
+      background: #f2f0eb;
+      border-radius: 8px;
+    }
+    #chat-log::-webkit-scrollbar-thumb {
+      background: var(--sage);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container" role="main" aria-live="polite" aria-label="Wallet risk chatbot">
+    <header>Wallet Risk Chatbot</header>
+
+    <div id="chat-log" aria-live="polite" aria-atomic="false"></div>
+
+    <form id="chat-form" autocomplete="off" aria-label="Send wallet address or message">
+      <input
+        id="chat-input"
+        name="message"
+        type="text"
+        placeholder="Paste an Ethereum wallet address here..."
+        aria-required="true"
+        aria-describedby="chat-hint"
+        autofocus
+      />
+      <button id="send-btn" type="submit" aria-label="Send message">Send</button>
+    </form>
+  </div>
+
+  <!-- Popup for enlarged chart -->
+  <div id="chart-popup" role="dialog" aria-modal="true" aria-hidden="true">
+    <button class="close-btn" aria-label="Close chart popup">&times;</button>
+    <img src="" alt="Enlarged risk factor chart" />
+  </div>
+
+  <script>
+    const chatLog = document.getElementById('chat-log');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const chartPopup = document.getElementById('chart-popup');
+    const chartPopupImg = chartPopup.querySelector('img');
+    const closeBtn = chartPopup.querySelector('.close-btn');
+
+    // Utility: determine color class for risk levels
+    function riskLevelClass(score, max) {
+      if (score / max < 0.4) return 'low-risk';
+      if (score / max < 0.7) return 'medium-risk';
+      return 'high-risk';
+    }
+
+    // Create progress bar HTML string and set color depending on value
+    function createProgressBar(scorePercent) {
+      let color;
+      if (scorePercent < 40) color = 'var(--progress-low)';
+      else if (scorePercent < 70) color = 'var(--progress-medium)';
+      else color = 'var(--progress-high)';
+
+      return `
+        <div class="progress-bar-wrapper" aria-label="Risk score progress bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${scorePercent}">
+          <div class="progress-bar" style="width: ${scorePercent}%; background-color: ${color};"></div>
+        </div>
+        <div><strong>Risk Score:</strong> ${scorePercent.toFixed(1)} / 100</div>
+      `;
+    }
+
+    function addMessage(text, isUser, riskScores = null, featureChartBase64 = null) {
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message');
+      msgDiv.classList.add(isUser ? 'user' : 'bot');
+
+      // Insert text content with line breaks
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+
+      if (!isUser && riskScores) {
+        // Build risk score visualization
+        const container = document.createElement('div');
+        container.classList.add('risk-score-container');
+
+        // Progress bar
+        container.innerHTML = createProgressBar(riskScores.total_risk_score);
+
+        // Create risk categories breakdown list
+        const ul = document.createElement('ul');
+        ul.classList.add('risk-category-list');
+
+        // Map keys to nicer labels and max values
+        const labelMap = {
+          aml_risk: { label: 'AML Risk', max: 60 },
+          scam_risk: { label: 'Scam Risk', max: 30 },
+          mixer_risk: { label: 'Mixer Risk', max: 30 },
+          exchange_risk: { label: 'Exchange Risk', max: 10 },
+          cluster_risk: { label: 'Cluster Risk', max: 30 },
+          idle_risk: { label: 'Idle Risk', max: 15 },
+          contract_interaction_risk: { label: 'Contract Interaction Risk', max: 15 },
+          small_transfer_risk: { label: 'Small Transfer Risk', max: 15 },
+        };
+
+        for (const [key, {label, max}] of Object.entries(labelMap)) {
+          if (key in riskScores) {
+            const score = riskScores[key];
+            const li = document.createElement('li');
+            const riskClass = riskLevelClass(score, max);
+            li.innerHTML = `<span class="risk-label">${label}:</span> <span class="${riskClass}">${score.toFixed(1)} / ${max}</span>`;
+            ul.appendChild(li);
+          }
+        }
+
+        container.appendChild(ul);
+        msgDiv.appendChild(container);
+      }
+
+      // Append chart if provided and bot message
+      if (featureChartBase64 && !isUser) {
+        const img = document.createElement('img');
+        img.src = `data:image/png;base64,${featureChartBase64}`;
+        img.alt = 'Risk factors chart';
+        img.classList.add('feature-chart-small');
+        img.tabIndex = 0;
+        img.setAttribute('role', 'button');
+        img.setAttribute('aria-label', 'Click to enlarge risk factors chart');
+        img.addEventListener('click', () => {
+          chartPopupImg.src = img.src;
+          chartPopup.style.display = 'flex';
+          chartPopup.setAttribute('aria-hidden', 'false');
+          closeBtn.focus();
+        });
+        msgDiv.appendChild(img);
+      }
+
+      chatLog.appendChild(msgDiv);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    closeBtn.addEventListener('click', () => {
+      chartPopup.style.display = 'none';
+      chartPopup.setAttribute('aria-hidden', 'true');
+      chatInput.focus();
+    });
+
+    // Close popup on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && chartPopup.style.display === 'flex') {
+        chartPopup.style.display = 'none';
+        chartPopup.setAttribute('aria-hidden', 'true');
+        chatInput.focus();
+      }
+    });
+
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = chatInput.value.trim();
+      if (!msg) return;
+
+      addMessage(msg, true);
+      chatInput.value = '';
+      chatInput.disabled = true;
+
+      try {
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg }),
+        });
+        const data = await response.json();
+
+        // data.reply = bot reply text
+        // data.risk_scores = risk score breakdown object (optional)
+        addMessage(data.reply, false, data.risk_scores || null, data.feature_chart || null);
+      } catch (err) {
+        addMessage('Sorry, there was an error. Please try again.', false);
+      } finally {
+        chatInput.disabled = false;
+        chatInput.focus();
+      }
+    });
+  </script>
+</body>
+</html>
