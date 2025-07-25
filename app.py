@@ -339,15 +339,7 @@ def chat():
 
         risk_text = "<br><b>Factors:</b><br>" + "<br>".join(explanation) if explanation else "No major risk indicators detected."
 
-        summary_text = (
-            "<br><br><b>Wallet activity summary:</b><br>"
-            f"- Incoming ETH: {summary['total_incoming_eth']:.2f}<br>"
-            f"- Outgoing ETH: {summary['total_outgoing_eth']:.2f}<br>"
-            f"- Unique Counterparties: {summary['unique_counterparties']}<br>"
-            f"- Transactions: {summary['tx_count']}<br>"
-            f"- Active days: {summary.get('activity_days', 0):.2f}"
-        )
-
+    
         label_color = "<span style='color:red; font-weight:bold'>RISKY</span>" if label == "RISKY" else "<span style='color:green; font-weight:bold'>SAFE</span>"
 
         reply_text = (
@@ -355,7 +347,7 @@ def chat():
             f"<b>Confidence:</b> {score:.2f}<br>"
         )
 
-        reply_text += f"{risk_text}{summary_text}"
+        reply_text += f"{risk_text}"
 
         return jsonify({
             'reply': reply_text,
