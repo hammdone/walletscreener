@@ -1,7 +1,11 @@
 # Ethereum Wallet Risk Screener
 
 ## Overview
-A Flask-based web app that analyzes Ethereum wallet addresses and assesses their risk level based on their activity. It fetches live data using the Etherscan API, extracts behavioral features, and applies a trained machine learning model to classify wallets as **RISKY** or **SAFE**.
+A Flask-based web app that analyzes Ethereum wallet addresses and assesses their risk level using on-chain behavior analysis. It combines machine learning with heuristic risk detection to identify:
+- Sanctioned activity
+- Money laundering patterns
+- Scam operations
+- Mixer usage
 
 ---
 
